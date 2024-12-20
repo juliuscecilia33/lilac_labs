@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import axios from "axios";
-import parse from "words-to-numbers";
 import { parseTotalPrice } from "./utils/helpers";
 import ChatWindow from "./components/ChatWindow";
 import OrderForm from "./components/OrderForm";
