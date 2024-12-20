@@ -98,7 +98,7 @@ const Home = () => {
     <div className="flex flex-col md:flex-row gap-4 p-4">
       <div className="flex-1">
         <h1 className="text-xl font-semibold mb-4 text-center">
-          Welcome to Ben Frank's!
+          Welcome to Ben Frank&apos;s!
         </h1>
 
         {/* If the order has started, show chat interface */}
