@@ -29,7 +29,7 @@ Make sure you have the following installed on your system:
 
 To start the project locally:
 
-1. Create an .env file in the root level
+1. Create an .env file in the root level (Vercel was not able to read the .env variables I put in the settings which caused the deployment site not to run properly)
 
 2. Add the following variables to the .env file:
 
