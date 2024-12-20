@@ -1,3 +1,4 @@
+// Spinner Component to indicate loading
 const Spinner = () => {
   return (
     <svg

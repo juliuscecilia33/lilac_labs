@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
 
+/**
+ * Handles POST requests to send order-related information to an external API.
+ *
+ * This function extracts the `orderId`, `input`, and `location` from the incoming
+ * request body, validates that all required parameters are provided, and sends
+ * the data to generate the next response and update the order
+ *
+ * @param request - The incoming HTTP request object containing the order details.
+ * @returns A JSON response with either the chat response from the external API or
+ *          an error message if the request fails.
+ */
 export async function POST(request: Request) {
   const { orderId, input, location } = await request.json();
 
@@ -26,8 +37,6 @@ export async function POST(request: Request) {
         },
       }
     );
-
-    console.log("backend response", response.data);
 
     return NextResponse.json({ chatResponse: response.data });
   } catch (error) {

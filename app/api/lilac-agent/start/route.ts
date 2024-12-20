@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
 
-type Data = {
-  orderId?: string;
-  error?: string;
-};
-
+/**
+ * Handles POST requests to start a new order
+ *
+ * Function expects a `location` parameter in the request body. If the `location`
+ * is provided, the function sends POST request to start an order,
+ * passing the location in the request body.
+ *
+ * If the request is successful, the order ID is returned
+ * to the client. If any error occurs (e.g., missing `location` or API failure), an
+ * appropriate error message is returned.
+ *
+ * @param request - The incoming HTTP request object containing the `location` parameter.
+ * @returns A JSON response with either the order ID or an error message.
+ */
 export async function POST(request: Request) {
   const location = (await request.json()).location; // Extract location from request body
 
