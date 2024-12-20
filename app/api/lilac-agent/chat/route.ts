@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
 
-type Data = {
-  orderId?: string;
-  error?: string;
-};
-
 export async function POST(request: Request) {
   const { orderId, input, location } = await request.json();
 

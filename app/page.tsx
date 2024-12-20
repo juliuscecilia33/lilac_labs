@@ -3,6 +3,10 @@
 import { useState } from "react";
 import axios from "axios";
 import parse from "words-to-numbers";
+import { parseTotalPrice } from "./utils/helpers";
+import ChatWindow from "./components/ChatWindow";
+import OrderForm from "./components/OrderForm";
+import Spinner from "./components/Spinner";
 
 const Home = () => {
   // State to hold the order ID, messages, and the order details
@@ -25,9 +29,11 @@ const Home = () => {
   >([]);
   const [orderInput, setOrderInput] = useState<string>("");
   const [totalPrice, setTotalPrice] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Starts the order by making an API request
   const handleStartOrder = async () => {
+    setIsLoading(true);
     try {
       const response = await axios.post("/api/lilac-agent/start", {
         location: "ben-franks",
@@ -38,13 +44,16 @@ const Home = () => {
         response.data.orderId
       );
       setOrderId(response.data.orderId);
+      setIsLoading(false);
     } catch (error) {
+      setIsLoading(false);
       console.error("Error starting order:", error);
     }
   };
 
   // Handles user chat submission and updates the order and chat state
   const handleChatSubmit = async (input: string) => {
+    setIsLoading(true);
     try {
       // Add user message to chat
       setMessages((prevMessages) => [
@@ -76,44 +85,14 @@ const Home = () => {
         })),
       ]);
 
-      const totalPriceMessage = assistantMessages.find(
-        (msg: { role: string; content: string }) =>
-          msg.content.toLowerCase().includes("total is")
-      );
+      const newTotalPrice = parseTotalPrice(assistantMessages);
+      if (newTotalPrice !== null) setTotalPrice(newTotalPrice);
 
-      if (totalPriceMessage) {
-        const priceMatch = totalPriceMessage.content.match(
-          /total is ([\w\s-]+) dollars?/i
-        );
-
-        if (priceMatch) {
-          const wordPrice = priceMatch[1]; // Extracts the part like "fourteen"
-          const convertedPrice = parse(wordPrice); // Convert words to numbers
-
-          // Improved regex for cents in words
-          const centsMatch = totalPriceMessage.content.match(
-            /and ([\w\s-]+) cents?/i
-          );
-
-          if (centsMatch) {
-            const wordCents = centsMatch[1];
-            const convertedCents = parse(wordCents);
-            setTotalPrice(parseFloat(`${convertedPrice}.${convertedCents}`));
-          } else {
-            setTotalPrice(parseFloat(`${convertedPrice}`)); // No cents in the message
-          }
-        }
-      }
+      setIsLoading(false);
     } catch (error) {
+      setIsLoading(false);
       console.error("Error sending message:", error);
     }
-  };
-
-  // Handle form submission and pass order input to chat
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleChatSubmit(orderInput);
-    setOrderInput("");
   };
 
   return (
@@ -125,62 +104,33 @@ const Home = () => {
 
         {/* If the order has started, show chat interface */}
         {orderId ? (
-          <div>
+          <>
             {/* Chat messages */}
-            <div className="max-w-lg mx-auto p-4 bg-white rounded-lg shadow-lg mb-4">
-              <div className="space-y-4">
-                {messages.map((msg, index) => (
-                  <div
-                    key={index}
-                    className={`p-2 rounded-lg ${
-                      msg.role === "user"
-                        ? "bg-indigo-100 text-indigo-700"
-                        : "bg-gray-200 text-gray-800"
-                    }`}
-                  >
-                    <strong>
-                      {msg.role === "user" ? "You" : "Assistant"}:
-                    </strong>{" "}
-                    {msg.content}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <ChatWindow messages={messages} />
 
             {/* Order input form */}
-            <form
-              onSubmit={handleSubmit}
-              className="max-w-lg mx-auto p-4 bg-white rounded-lg shadow-lg"
-            >
-              <label
-                htmlFor="order"
-                className="block text-xl font-semibold mb-2"
-              >
-                Your Order:
-              </label>
-              <input
-                id="order"
-                type="text"
-                value={orderInput}
-                onChange={(e) => setOrderInput(e.target.value)}
-                placeholder="Enter your order..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4"
-              />
-              <button
-                type="submit"
-                className="w-full py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                Submit Order
-              </button>
-            </form>
-          </div>
+            <OrderForm
+              orderInput={orderInput}
+              setOrderInput={setOrderInput}
+              isLoading={isLoading}
+              handleSubmit={(e) => {
+                e.preventDefault();
+                handleChatSubmit(orderInput);
+                setOrderInput("");
+              }}
+            />
+          </>
         ) : (
           // Button to start the order if not already started
           <button
             onClick={handleStartOrder}
-            className="w-full py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            disabled={isLoading}
+            className={`w-full py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+              isLoading ? "cursor-not-allowed opacity-75" : ""
+            }`}
           >
-            Start Order
+            {isLoading && <Spinner />}
+            {isLoading ? "Processing..." : "Start Order"}
           </button>
         )}
       </div>
@@ -191,40 +141,40 @@ const Home = () => {
 
         {/* Display order details if order exists */}
         {order.length > 0 ? (
-          <ul className="space-y-4">
-            {order.map((item, index) => (
-              <li key={index} className="p-4 bg-white rounded-lg shadow">
-                <h3 className="font-semibold">{item.itemName}</h3>
-                <p className="mt-2 text-sm text-gray-600">
-                  <strong>Price:</strong> ${item.price.toFixed(2)}
-                </p>
-                <ul className="mt-2 space-y-1 text-sm">
-                  {item.optionKeys.map((key, idx) => (
-                    <li className="capitalize" key={idx}>
-                      <strong>{key}:</strong>{" "}
-                      {item.optionValues[idx]?.join(", ") || "None"}
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="space-y-4">
+              {order.map((item, index) => (
+                <li key={index} className="p-4 bg-white rounded-lg shadow">
+                  <h3 className="font-semibold">{item.itemName}</h3>
+                  <p className="mt-2 text-sm text-gray-600">
+                    <strong>Price:</strong> ${item.price.toFixed(2)}
+                  </p>
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {item.optionKeys.map((key, idx) => (
+                      <li className="capitalize" key={idx}>
+                        <strong>{key}:</strong>{" "}
+                        {item.optionValues[idx]?.join(", ") || "None"}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+
+            {/* Display total price if there are items in the order */}
+            <div className="mt-4 p-4 bg-white rounded-lg shadow">
+              <h3 className="text-lg font-semibold">
+                Total Price: $
+                {totalPrice !== null
+                  ? totalPrice.toFixed(2)
+                  : order
+                      .reduce((total, item) => total + (item.price || 0), 0)
+                      .toFixed(2)}
+              </h3>
+            </div>
+          </>
         ) : (
           <p>No items in the order yet.</p>
-        )}
-
-        {/* Display total price if there are items in the order */}
-        {order.length > 0 && (
-          <div className="mt-4 p-4 bg-white rounded-lg shadow">
-            <h3 className="text-lg font-semibold">
-              Total Price: $
-              {totalPrice !== null
-                ? totalPrice.toFixed(2)
-                : order
-                    .reduce((total, item) => total + (item.price || 0), 0)
-                    .toFixed(2)}
-            </h3>
-          </div>
         )}
       </div>
     </div>
