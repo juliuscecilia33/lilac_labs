@@ -45,7 +45,7 @@ To start the project locally:
    ```
    http://localhost:3000
    ```
-   Your application should now be running locally on port 3000.
+   The application should now be running locally on port 3000.
 
 ## 
 ![image](https://github.com/user-attachments/assets/9fb33c1f-0cc3-4b62-866b-0a97bd73f3b9)
