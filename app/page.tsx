@@ -76,27 +76,29 @@ const Home = () => {
         })),
       ]);
 
-      // Update total price from agent's response
       const totalPriceMessage = assistantMessages.find(
         (msg: { role: string; content: string }) =>
           msg.content.toLowerCase().includes("total is")
       );
+
       if (totalPriceMessage) {
         const priceMatch = totalPriceMessage.content.match(
           /total is ([\w\s-]+) dollars?/i
         );
-        if (priceMatch) {
-          // Convert words to number
-          const wordPrice = priceMatch[1]; // Extracts the part like "fourteen"
-          const convertedPrice = parse(wordPrice);
 
-          // Assuming cents follow in the message like "seventy-nine cents"
+        if (priceMatch) {
+          const wordPrice = priceMatch[1]; // Extracts the part like "fourteen"
+          const convertedPrice = parse(wordPrice); // Convert words to numbers
+
+          // Improved regex for cents in words
           const centsMatch = totalPriceMessage.content.match(
-            /and (\d+)-?(\d{2})? cents?/i
+            /and ([\w\s-]+) cents?/i
           );
+
           if (centsMatch) {
-            const cents = centsMatch[1] + (centsMatch[2] || "00"); // Combine cents
-            setTotalPrice(parseFloat(`${convertedPrice}.${cents}`)); // Set the total price as a number
+            const wordCents = centsMatch[1];
+            const convertedCents = parse(wordCents);
+            setTotalPrice(parseFloat(`${convertedPrice}.${convertedCents}`));
           } else {
             setTotalPrice(parseFloat(`${convertedPrice}`)); // No cents in the message
           }
